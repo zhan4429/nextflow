@@ -1,5 +1,5 @@
 ## align
-'''
+```
 process align_sample{
     input:
     file 'reference.fa' from genome_ch
@@ -15,9 +15,11 @@ process align_sample{
     """
 }
 
-'''
+```
+
 
 ## index
+```
 process index_sample {
 
     input:
@@ -31,3 +33,4 @@ process index_sample {
     samtools index sample.bam
     """
 }
+```
