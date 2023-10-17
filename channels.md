@@ -55,3 +55,59 @@ myList = [1776, -1, 33, 99, 0, 928734928763]
 myMap = [ p1 : "start", q2 : "end" ]
 ```
 
+## Queue channel factory
+Queue (consumable) channels can be created using the following channel factory methods.
+
+- Channel.of
+- Channel.fromList
+- Channel.fromPath
+- Channel.fromFilePairs
+- Channel.fromSRA
+
+### The of Channel factory
+When you want to create a channel containing multiple values you can use the channel factory `Channel.of`. `Channel.of` allows the creation of a queue channel with the values specified as arguments, separated by a `,`.
+
+```
+chromosome_ch = Channel.of( 'chr1', 'chr3', 'chr5', 'chr7' )
+chromosome_ch.view()
+chr1
+chr3
+chr5
+chr7
+```
+The first line in this example creates a variable `chromosome_ch`. `chromosome_ch` is a queue channel containing the four values specified as arguments in the of method. The view operator will print one line per item in a list. Therefore the view operator on the second line will print four lines, one for each element in the channel:
+
+You can specify a range of numbers as a single argument using the Groovy range operator `..`. This creates each value in the range (**including the start and end values**) as a value in the channel. The Groovy range operator can also produce ranges of dates, letters, or time. 
+
+```
+chromosome_ch = Channel.of(1..22, 'X', 'Y')
+chromosome_ch.view()
+```
+Arguments passed to the of method can be of varying types e.g., combinations of numbers, strings, or objects. In the above examples we have examples of both string and number data types.
+
+### Channel.from
+You may see the method `Channel.from` in older nextflow scripts. This performs a similar function but is now deprecated (no longer used), and so `Channel.of` should be used instead.
+
+#### Create a value and Queue and view Channel contents
+
+1. Create a Nextflow script file called channel.nf .
+2. Create a Value channel ch_vl containing the String 'GRCh38'.
+3. Create a Queue channel ch_qu containing the values 1 to 4.
+4. Use `.view()` operator on the channel objects to view the contents of the channels.
+
+#### Solution
+1. ch_vl = Channel.value('GRCh38')
+2. ch_qu = Channel.of(1,2,3,4)
+3. ch_vl.view()
+4. ch_qu.view()
+
+```
+nextflow run channel.nf
+N E X T F L O W  ~  version 21.04.0
+Launching `channel.nf` [condescending_dalembert] - revision: c80908867b
+ GRCh38
+ 1
+ 2
+ 3
+ 4
+ ```
