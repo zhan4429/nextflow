@@ -30,21 +30,28 @@ Channel factories are used to explicitly create channels. In programming, factor
 Channel factories are called using the `Channel.<method>` syntax, and return a specific instance of a `Channel`.
 
 ### The value Channel factory
-The value factory method is used to create a value channel. Values are put inside parentheses () to assign them to a channel.
+The value factory method is used to create a value channel. Values are put inside parentheses `()` to assign them to a channel.
 
 For example:
 
+```
 ch1 = Channel.value( 'GRCh38' )
 ch2 = Channel.value( ['chr1', 'chr2', 'chr3', 'chr4', 'chr5'] )
 ch3 = Channel.value( ['chr1' : 248956422, 'chr2' : 242193529, 'chr3' : 198295559] )
-Creates a value channel and binds a string to it.
-Creates a value channel and binds a list object to it that will be emitted as a single item.
-Creates a value channel and binds a map object to it that will be emitted as a single item.
-The value method can only take 1 argument, however, this can be a single list or map containing several elements.
+```
 
-Reminder:
+1. Creates a value channel and binds a string to it.
+2. Creates a value channel and binds a list object to it that will be emitted as a single item.
+3. Creates a value channel and binds a map object to it that will be emitted as a single item.
+T
+he value method can only take `1` argument, however, this can be **a single list or map containing several elements**.
 
-A List object can be defined by placing the values in square brackets [] separated by a comma.
-A Map object is similar, but with key:value pairs separated by commas.
+**Reminder**:
+- A List object can be defined by placing the values in square brackets `[]` separated by a comma.
+- A Map object is similar, but with `key:value` pairs separated by `commas`.
+
+```
 myList = [1776, -1, 33, 99, 0, 928734928763]
 myMap = [ p1 : "start", q2 : "end" ]
+```
+
