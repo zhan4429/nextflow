@@ -202,3 +202,120 @@ Launching `hello.nf` [intergalactic_mcclintock] - revision: d2c138894b
 No files match pattern `*.fq.gz` at path: data/chicken/reads/
 ```
 
+#### Using Channel.fromPath
+1. Create a Nextflow script channel_fromPath.nf
+2. Use the Channel.fromPath method to create a channel containing all files in the data/yeast/ directory， including the subdirectories.
+3. Add the parameter to include any hidden files.
+4. Then print all file names using the view operator.
+
+##### Solution
+```
+all_files_ch = Channel.fromPath('data/yeast/**', hidden: true)
+all_files_ch.view()
+```
+
+### The fromFilePairs Channel factory
+
+We have seen how to process files individually using fromPath. In Bioinformatics we often want to process files in pairs or larger groups, such as read pairs in sequencing.
+
+For example is the data/yeast/reads directory we have nine groups of read pairs.
+
+| Sample group	| read1	| read2 | 
+| -------- | ------- |
+| ref1	| data/yeast/reads/ref1_1.fq.gz	| data/yeast/reads/ref1_2.fq.gz | 
+| ref2	| data/yeast/reads/ref2_1.fq.gz	| data/yeast/reads/ref2_2.fq.gz | 
+
+Nextflow provides a convenient Channel factory method for this common bioinformatics use case. The `fromFilePairs` method creates a queue channel containing a tuple for every set of files matching a specific glob pattern (e.g., /path/to/*_{1,2}.fq.gz).
+
+A tuple is a grouping of data, represented as a Groovy List.
+
+The first element of the tuple emitted from `fromFilePairs` is a string based on the shared part of the filenames (i.e., the `*` part of the glob pattern).
+
+The second element is the list of files matching the remaining part of the glob pattern (i.e., the <string>_{1,2}.fq.gz pattern). This will include any files ending _1.fq.gz or _2.fq.gz.
+
+```
+read_pair_ch = Channel.fromFilePairs('data/yeast/reads/*_{1,2}.fq.gz')
+read_pair_ch.view()
+```
+
+Output
+```
+[etoh60_3, [data/yeast/reads/etoh60_3_1.fq.gz, data/yeast/reads/etoh60_3_2.fq.gz]]
+[temp33_1, [data/yeast/reads/temp33_1_1.fq.gz, data/yeast/reads/temp33_1_2.fq.gz]]
+[ref1, [data/yeast/reads/ref1_1.fq.gz, data/yeast/reads/ref1_2.fq.gz]]
+[ref2, [data/yeast/reads/ref2_1.fq.gz, data/yeast/reads/ref2_2.fq.gz]]
+[temp33_2, [data/yeast/reads/temp33_2_1.fq.gz, data/yeast/reads/temp33_2_2.fq.gz]]
+[ref3, [data/yeast/reads/ref3_1.fq.gz, data/yeast/reads/ref3_2.fq.gz]]
+[temp33_3, [data/yeast/reads/temp33_3_1.fq.gz, data/yeast/reads/temp33_3_2.fq.gz]]
+[etoh60_1, [data/yeast/reads/etoh60_1_1.fq.gz, data/yeast/reads/etoh60_1_2.fq.gz]]
+[etoh60_2, [data/yeast/reads/etoh60_2_1.fq.gz, data/yeast/reads/etoh60_2_2.fq.gz]]
+```
+
+This will produce a queue channel, `read_pair_ch`, containing nine elements.
+
+Each element is a `tuple` that has;
+
+string value (the file prefix matched, e.g temp33_1)
+and a list with the two files e,g. [data/yeast/reads/temp33_1_1.fq.gz, data/yeast/reads/temp33_1_2.fq.gz] .
+The asterisk character *, matches any number of characters (including none), and the {} braces specify a collection of subpatterns. Therefore the *_{1,2}.fq.gz pattern matches any file name ending in _1.fq.gz or _2.fq.gz .
+
+#### What if you want to capture more than a pair?
+
+If you want to capture more than two files for a pattern you will need to change the default size argument (the default value is `2`) to the number of expected matching files.
+
+For example in the directory data/yeast/reads there are six files with the prefix ref. If we want to group (create a tuple) for all of these files we could write;
+
+```
+read_group_ch = Channel.fromFilePairs('data/yeast/reads/ref{1,2,3}*',size:6)
+read_group_ch.view()
+```
+
+The code above will create a queue channel containing one element. The element is a tuple of which contains a string value, that is the pattern ref, and a list of six files matching the pattern.
+
+```
+[ref, [data/yeast/reads/ref1_1.fq.gz, data/yeast/reads/ref1_2.fq.gz, data/yeast/reads/ref2_1.fq.gz, data/yeast/reads/ref2_2.fq.gz, data/yeast/reads/ref3_1.fq.gz, data/yeast/reads/ref3_2.fq.gz]]
+```
+
+### The fromSRA Channel factory
+Another useful factory method is `fromSRA`. The `fromSRA` method makes it possible to query the NCBI SRA archive and returns a queue channel emitting the FASTQ files matching the specified selection criteria.
+
+The queries can be project IDs or accession numbers supported by the NCBI ESearch API.
+
+If you want to use this functionality, you will need an `NCBI API KEY`, and to set the environment variable `NCBI_API_KEY` to its value.
+
+```
+sra_ch =Channel.fromSRA('SRP043510')
+sra_ch.view()
+```
+This will print a tuple for every fastq file associated with that SRA project accession.
+
+```
+[SRR1448794, ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR144/004/SRR1448794/SRR1448794.fastq.gz]
+[SRR1448795, ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR144/005/SRR1448795/SRR1448795.fastq.gz]
+[SRR1448792, ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR144/002/SRR1448792/SRR1448792.fastq.gz]
+[SRR1448793, ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR144/003/SRR1448793/SRR1448793.fastq.gz]
+[SRR1910483, ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR191/003/SRR1910483/SRR1910483.fastq.gz]
+[SRR1910482, ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR191/002/SRR1910482/SRR1910482.fastq.gz]
+(remaining omitted)
+```
+Multiple accession IDs can be specified using a list object:
+```
+ids = ['ERR908507', 'ERR908506', 'ERR908505']
+sra_ch = Channel.fromSRA(ids)
+sra_ch.view()
+```
+
+```
+[ERR908507, [ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR908/ERR908507/ERR908507_1.fastq.gz, ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR908/ERR908507/ERR908507_2.fastq.gz]]
+[ERR908506, [ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR908/ERR908506/ERR908506_1.fastq.gz, ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR908/ERR908506/ERR908506_2.fastq.gz]]
+[ERR908505, [ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR908/ERR908505/ERR908505_1.fastq.gz, ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR908/ERR908505/ERR908505_2.fastq.gz]]
+```
+
+## Key points
+- Channels must be used to import data into Nextflow.
+- Nextflow has two different kinds of channels: queue channels and value channels.
+- Data in value channels can be used multiple times in workflow.
+- Data in queue channels are consumed when they are used by a process or an operator.
+- Channel factory methods, such as `Channel.of`, are used to create channels.
+- Channel factory methods have optional parameters e.g., `checkIfExists`, that can be used to alter the creation and behaviour of a channel.
+
