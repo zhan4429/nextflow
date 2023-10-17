@@ -172,6 +172,8 @@ process PYSTUFF {
 workflow {
   PYSTUFF()
 }
+```
+
 
 ```
 //process_rscript.nf
