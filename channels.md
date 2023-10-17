@@ -111,3 +111,18 @@ Launching `channel.nf` [condescending_dalembert] - revision: c80908867b
  3
  4
  ```
+
+
+ ### The fromList Channel factory
+You can use the Channel.fromList method to create a queue channel from a list object.
+
+```
+aligner_list = ['salmon', 'kallisto']
+aligner_ch = Channel.fromList(aligner_list)
+aligner_ch.view()
+```
+This would produce two lines.
+```
+salmon
+kallisto
+```
