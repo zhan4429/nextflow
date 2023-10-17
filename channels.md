@@ -126,3 +126,79 @@ This would produce two lines.
 salmon
 kallisto
 ```
+
+#### Channel.fromList vs Channel.of
+
+In the above example, the channel has two elements. If you has used the `Channel.of`(aligner_list) it would have contained only 1 element [salmon, kallisto] and any operator or process using the channel would run once.
+
+### The fromPath Channel factory
+The previous channel factory methods dealt with sending general values in a channel. A special channel factory method `fromPath` is used when wanting to pass files.
+
+The `fromPath` factory method creates a queue channel containing one or more files matching a file path.
+
+The file path (written as a quoted string) can be the location of a single file or a “glob pattern” that matches multiple files or directories.
+
+The file path can be a relative path (path to the file from the current directory), or an absolute path (path to the file from the system root directory - starts with /).
+
+The script below creates a queue channel with a single file as its content.
+```
+read_ch = Channel.fromPath( 'data/yeast/reads/ref1_2.fq.gz' )
+read_ch.view()
+```
+output
+```
+data/yeast/reads/ref1_2.fq.gz
+```
+You can also use glob syntax to specify pattern-matching behaviour for files. A glob pattern is specified as a string and is matched against directory or file names.
+
+An asterisk, `*`, matches any number of characters (including none).
+Two asterisks, `**`, works like `*` but will also search sub directories. This syntax is generally used for matching complete paths.
+Braces `{}` specify a collection of subpatterns. For example: `{bam,bai}` matches “bam” or “bai”
+For example the script below uses the *.fq.gz pattern to create a queue channel that contains as many items as there are files with .fq.gz extension in the data/yeast/reads folder.
+
+```
+read_ch = Channel.fromPath( 'data/yeast/reads/*.fq.gz' )
+read_ch.view()
+data/yeast/reads/ref1_2.fq.gz
+data/yeast/reads/etoh60_3_2.fq.gz
+data/yeast/reads/temp33_1_2.fq.gz
+data/yeast/reads/temp33_2_1.fq.gz
+data/yeast/reads/ref2_1.fq.gz
+data/yeast/reads/temp33_3_1.fq.gz
+```
+
+You can change the behaviour of `Channel.fromPath` method by changing its options. A list of ``.fromPath` options is shown below.
+
+Available `fromPath` options:
+
+| Name  | Description |
+| -------- | ------- |
+| glob  | When true, the characters `*`, `?`, `[]` and `{}` are interpreted as glob wildcards, otherwise they are treated as literal characters (`default: true``)    |
+| type  | The type of file paths matched by the string, either `file`, `dir` or `any` (default: `file`)     |
+| hidden    | When true, hidden files are included in the resulting paths (`default: false`)    |
+| maxDepth  | Maximum number of directory levels to visit (default: no limit) |
+| followLinks | When true, symbolic links are followed during directory tree traversal, otherwise they are managed as files (`default: true`) |
+| relative |	When true returned paths are relative to the top-most common directory (`default: false`) |
+| checkIfExists	| When true throws an exception if the specified path does not exist in the file system (`default: false`) |
+
+We can change the default options for the fromPath method to give an error if the file doesn’t exist using the `checkIfExists` parameter. In Nextflow, method parameters are separated by a `,` and parameter values specified with a colon `:`.
+
+If we execute a Nextflow script with the contents below, it will run and not produce an output. This is likely not what we want.
+
+```
+read_ch = Channel.fromPath( 'data/chicken/reads/*.fq.gz' )
+read_ch.view()
+```
+
+Add the argument `checkIfExists` with the value true.
+```
+read_ch = Channel.fromPath( 'data/chicken/reads/*.fq.gz', checkIfExists: true )
+read_ch.view()
+```
+This will give an error as there is no data/chicken directory.
+```
+N E X T F L O W  ~  version 20.10.0
+Launching `hello.nf` [intergalactic_mcclintock] - revision: d2c138894b
+No files match pattern `*.fq.gz` at path: data/chicken/reads/
+```
+
