@@ -399,3 +399,31 @@ executor >  local (1)
 [84/c44f25] process > INDEX [100%] 1 of 1 ✔
 indexed using kallisto
 ```
+
+## Inputs
+
+Processes are isolated from each other but can communicate by sending values and files via Nextflow channels from input and into output blocks.
+
+The input block defines which channels the process is expecting to receive input from. The number of elements in input channels determines the process dependencies and the number of times a process executes.
+
+![Channels-process](images/channel-process.png)
+
+You can only define one input block at a time and it must contain one or more input declarations.
+
+The input block follows the syntax shown below:
+
+```
+input:
+  <input qualifier> <input name>
+```
+
+The input qualifier declares the type of data to be received.
+
+### Input qualifiers
+
+- val: Lets you access the received input value by its name as a variable in the process script.
+- env: Lets you use the input value to set an environment variable named as the specified input name.
+- path: Lets you handle the received value as a file, staging the file properly in the execution context.
+- stdin: Lets you forward the received value to the process stdin special file.
+- tuple: Lets you handle a group of input values having one of the above qualifiers.
+- each: Lets you execute the process for each entry in the input collection. 
