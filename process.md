@@ -691,9 +691,85 @@ workflow {
 }
 ```
 
+```
 $ nextflow run process_combine_02.nf -process.echo
+```
 In the above example the process is executed only two times, because when a queue channel has no more data to be processed it stops the process execution.
-
+```
 2 and b
-
 1 and a
+```
+
+#### Value channels and process termination
+Note however that value channels, `Channel.value`, do not affect the process termination.
+
+To better understand this behaviour compare the previous example with the following one:
+```
+//process_combine_03.nf
+nextflow.enable.dsl=2
+
+process COMBINE {
+  input:
+  val x
+  val y
+
+  script:
+  """
+  echo $x and $y
+  """
+}
+ch_num = Channel.value(1)
+ch_letters = Channel.of('a', 'b', 'c')
+
+workflow {
+  COMBINE(ch_num, ch_letters)
+}
+```
+
+```
+$ nextflow run process_combine_03.nf -process.echo
+```
+In this example the process is run three times.
+
+```
+1 and b
+1 and a
+1 and c
+```
+#### Combining input channels
+Write a nextflow script process_exercise_combine.nf that combines two input channels
+```
+transcriptome_ch = channel.fromPath('data/yeast/transcriptome/Saccharomyces_cerevisiae.R64-1-1.cdna.all.fa.gz')
+kmer_ch = channel.of(21)
+```
+And include the command below in the script directive
+
+```
+  script:
+  """
+  salmon index -t $transcriptome -i index -k $kmer .
+  """
+```
+Solution
+```
+// process_exercise_combine_answer.nf
+nextflow.enable.dsl=2
+process COMBINE {
+ input:
+ path transcriptome
+ val kmer
+
+ script:
+ """
+ salmon index -t $transcriptome -i index -k $kmer
+ """
+}
+
+transcriptome_ch = channel.fromPath('data/yeast/transcriptome/Saccharomyces_cerevisiae.R64-1-1.cdna.all.fa.gz', checkIfExists: true)
+kmer_ch = channel.of(21)
+
+workflow {
+  COMBINE(transcriptome_ch, kmer_ch)
+}
+```
+
