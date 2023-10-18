@@ -427,3 +427,273 @@ The input qualifier declares the type of data to be received.
 - stdin: Lets you forward the received value to the process stdin special file.
 - tuple: Lets you handle a group of input values having one of the above qualifiers.
 - each: Lets you execute the process for each entry in the input collection. 
+
+
+#### Input values
+The `val` qualifier allows you to receive value data as input. It can be accessed in the process script by using the specified input name, as shown in the following example:
+
+```
+//process_input_value.nf
+nextflow.enable.dsl=2
+
+process PRINTCHR {
+
+  input:
+  val chr
+
+  script:
+  """
+  echo processing chromosome $chr
+  """
+}
+
+chr_ch = Channel.of( 1..22, 'X', 'Y' )
+
+workflow {
+
+  PRINTCHR(chr_ch)
+}
+
+```
+
+```
+$ nextflow run process_input_value.nf -process.echo
+N E X T F L O W  ~  version 21.04.0
+Launching `juggle_processes.nf` [wise_kalman] - revision: 7f90e1bfc5
+executor >  local (24)
+[b1/88df3f] process > PRINTCHR (24) [100%] 24 of 24 ✔
+processing chromosome 3
+processing chromosome 1
+processing chromosome 2
+..truncated...
+```
+
+In the above example the process is executed 24 times; each time a value is received from the queue channel `chr_ch` it is used to run the process.
+
+##### Channel order
+The channel guarantees that items are delivered in the same order as they have been sent, but since the process is executed in a parallel manner, there is no guarantee that they are processed in the same order as they are received.
+
+#### Input files
+When you need to handle files as input you need the `path` qualifier. Using the `path` qualifier means that Nextflow will stage it in the process execution directory, and it can be accessed in the script by using the name specified in the input declaration.
+
+The input file name can be defined dynamically by defining the input name as a Nextflow variable and referenced in the script using the  `$variable_name` syntax.
+
+For example in the script below we assign the variable name read to the input files using the `path` qualifier. The file is referenced using the variable substitution syntax `${read}` in the script block:
+
+```
+//process_input_file.nf
+nextflow.enable.dsl=2
+
+process NUMLINES {
+    input:
+    path read
+
+    script:
+    """
+    printf '${read} '
+    gunzip -c ${read} | wc -l
+    """
+}
+
+reads_ch = Channel.fromPath( 'data/yeast/reads/ref*.fq.gz' )
+
+workflow {
+  NUMLINES(reads_ch)
+}
+```
+
+```
+$ nextflow run process_input_file.nf -process.echo
+[cd/77af6d] process > NUMLINES (1) [100%] 6 of 6 ✔
+ref1_1.fq.gz 58708
+
+ref3_2.fq.gz 52592
+
+ref2_2.fq.gz 81720
+
+ref2_1.fq.gz 81720
+
+ref3_1.fq.gz 52592
+
+ref1_2.fq.gz 58708
+```
+
+The input name can also be defined as user specified filename inside `quotes`. For example in the script below the name of the file is specified as `sample.fq.gz` in the input definition and can be referenced by that name in the script block.
+
+```
+//process_input_file_02.nf
+nextflow.enable.dsl=2
+
+process NUMLINES {
+    input:
+    path 'sample.fq.gz'
+
+    script:
+    """
+    printf 'sample.fq.gz '
+    gunzip -c sample.fq.gz | wc -l
+    """
+}
+
+reads_ch = Channel.fromPath( 'data/yeast/reads/ref*.fq.gz' )
+
+workflow {
+  NUMLINES(reads_ch)
+}
+```
+
+```
+$ nextflow run process_input_file_02.nf -process.echo
+[d2/eb0e9d] process > NUMLINES (1) [100%] 6 of 6 ✔
+sample.fq.gz 58708
+
+sample.fq.gz 52592
+
+sample.fq.gz 81720
+
+sample.fq.gz 81720
+
+sample.fq.gz 52592
+
+sample.fq.gz 58708
+```
+
+##### File Objects as inputs
+When a process declares an input file the corresponding channel elements must be file objects i.e. created with the `path` helper function from the file specific channel factories e.g. `Channel.fromPath` or `Channel.fromFilePairs`.
+
+#### Add input channel 
+Add an input channel to the script below that takes the reads channel as input. FastQC is a quality control tool for high throughput sequence data.
+```
+//process_exercise_input.nf
+nextflow.enable.dsl=2
+
+process FASTQC {
+   //add input channel
+   
+   script:
+   """
+   mkdir fastqc_out
+   fastqc -o fastqc_out ${reads}
+   ls -1 fastqc_out
+   """
+}
+reads_ch = Channel.fromPath( 'data/yeast/reads/ref1*_{1,2}.fq.gz' )
+
+workflow {
+  FASTQC(reads_ch)
+}
+```
+Then run your script using
+```
+nextflow run process_exercise_input.nf -process.echo
+```
+Solution
+```
+//process_exercise_input_answer.nf
+nextflow.enable.dsl=2
+process FASTQC {
+   input:
+   path reads
+
+   script:
+   """
+   mkdir fastqc_out
+   fastqc -o fastqc_out ${reads}
+   ls -1 fastqc_out
+   """
+}
+reads_ch = Channel.fromPath( 'data/yeast/reads/ref1*_{1,2}.fq.gz' )
+
+workflow {
+  FASTQC(reads_ch)
+}
+```
+
+```
+N E X T F L O W  ~  version 21.04.0
+Launching `process_exercise_input_answer.nf` [jovial_wescoff] - revision: e3db00a4dc
+executor >  local (2)
+[d9/559a27] process > FASTQC (2) [100%] 2 of 2 ✔
+Analysis complete for ref1_1.fq.gz
+ref1_1_fastqc.html
+ref1_1_fastqc.zip
+
+Analysis complete for ref1_2.fq.gz
+ref1_2_fastqc.html
+ref1_2_fastqc.zip
+
+```
+
+#### Combining input channels
+A key feature of processes is the ability to handle inputs from multiple channels. However it’s important to understand how the number of items within the multiple channels affect the execution of a process.
+
+Consider the following example:
+```
+//process_combine.nf
+nextflow.enable.dsl=2
+
+process COMBINE {
+  input:
+  val x
+  val y
+
+  script:
+  """
+  echo $x and $y
+  """
+}
+
+num_ch = Channel.of(1, 2, 3)
+letters_ch = Channel.of('a', 'b', 'c')
+
+workflow {
+  COMBINE(num_ch, letters_ch)
+}
+```
+```
+$ nextflow run process_combine.nf -process.echo
+```
+Both channels contain three elements, therefore the process is executed three times, each time with a different pair:
+
+2 and b
+
+1 and a
+
+3 and c
+
+What is happening is that the process waits until it receives an input value from all the queue channels declared as input.
+
+When this condition is verified, it uses up the input values coming from the respective queue channels, runs the task. This logic repeats until one or more queue channels have no more content. The process then stops.
+
+**What happens when not all channels have the same number of elements?**
+
+For example:
+```
+//process_combine_02.nf
+nextflow.enable.dsl=2
+
+process COMBINE {
+  input:
+  val x
+  val y
+
+  script:
+  """
+  echo $x and $y
+  """
+}
+
+ch_num = Channel.of(1, 2)
+ch_letters = Channel.of('a', 'b', 'c', 'd')
+
+workflow {
+  COMBINE(ch_num, ch_letters)
+}
+```
+
+$ nextflow run process_combine_02.nf -process.echo
+In the above example the process is executed only two times, because when a queue channel has no more data to be processed it stops the process execution.
+
+2 and b
+
+1 and a
