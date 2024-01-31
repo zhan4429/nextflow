@@ -16,3 +16,22 @@ In another terminal you can check the execution with :
 ```
 squeue -u <username>
 ```
+
+## Load multiple modules
+```
+module = 'bioinfo/bwa-0.7.15:bioinfo/samtools-1.8'
+
+# OR
+
+module = ['bioinfo/bwa-0.7.15','bioinfo/samtools-1.8']
+```
+
+## ceres.config from IOWA state
+```
+process {
+  executor = 'slurm'
+  clusterOptions =  '-N 1 -n 16 -t 02:00:00'
+  withLabel: blast { module = 'blast+' }
+  withLabel: software_check { module = 'blast+:parallel' }
+}
+```
